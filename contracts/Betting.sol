@@ -3,13 +3,15 @@ pragma solidity ^0.8.14;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-//@TODO DevFee
 //@TODO CANCELED MatchResult
 //@TODO onlyOwner withdrawal
 //@TODO Oracle implementation
 contract Betting is Ownable {
 
   enum MatchResult{ PENDING, TEAM_A, TEAM_B, DRAW }
+
+  uint contractFee = 4;
+  uint devFee = 1;
 
   struct Match {
     string teamAName;
@@ -23,14 +25,23 @@ contract Betting is Ownable {
   }
 
   struct Bet {
-    uint value;
+    uint matchId;
     MatchResult result;
-    bool received;
   }
 
-  Match[] public matchs;
+  struct MultiBet {
+    mapping (uint => Bet) bets;
+    uint value;
+    bool received;
+    uint betsCount;
+    uint prize;
+  }
 
-  mapping (uint => mapping(address => Bet)) Bets;
+  Match[] public matches;
+
+  MultiBet[] public Bets;
+  mapping (uint => address) public BetToOwner;
+  mapping (address => uint[]) public OwnerToBets;
 
   function createMatch(
     string memory _teamAName, 
@@ -46,42 +57,67 @@ contract Betting is Ownable {
     require(_rateDraw > 100, "_rateDraw");
     require(_endBetTime > block.timestamp, "_endBetTime");
 
-    matchs.push(Match(_teamAName, _teamBName, _rateA, _rateB, _rateDraw, _endBetTime, MatchResult.PENDING, false));
-    return matchs.length - 1;
+    matches.push(Match(_teamAName, _teamBName, _rateA, _rateB, _rateDraw, _endBetTime, MatchResult.PENDING, false));
+    return matches.length - 1;
   }
 
   function setMatchResult(uint _matchId, MatchResult _matchResult) public onlyOwner {
     require(_matchResult != MatchResult.PENDING);
-    require(matchs[_matchId].finished == false);
+    require(matches[_matchId].finished == false);
 
-    matchs[_matchId].result = _matchResult;
-    matchs[_matchId].finished = true;
+    matches[_matchId].result = _matchResult;
+    matches[_matchId].finished = true;
   }
 
-  function betMatch(uint _matchId, MatchResult _matchResult) public payable {
+  function betMatches(uint[] calldata _matchIds, MatchResult[] calldata _matchResults) public payable returns(uint) {
     require(msg.value > 0, "msg.value");
-    require(matchs[_matchId].endBetTime > block.timestamp);
-    require(_matchResult != MatchResult.PENDING);
-    require(Bets[_matchId][msg.sender].value == 0, "Bets");
+    require(_matchIds.length == _matchResults.length, "_matchIds.length != _matchResults.length");
+    
+    uint i = 0;
+    for (; i < _matchIds.length; i++) {
+      require(matches[_matchIds[i]].endBetTime > block.timestamp);
+      require(_matchResults[i] != MatchResult.PENDING);
+    }
 
-    Bets[_matchId][msg.sender] = Bet(msg.value, _matchResult, false);
+    MultiBet storage newMultiBet = Bets.push();
+    newMultiBet.value = msg.value;
+    newMultiBet.received = false;
+    newMultiBet.betsCount = 0;
+
+    for (i = 0; i < _matchIds.length; i++) {
+      newMultiBet.bets[newMultiBet.betsCount] = Bet(_matchIds[i], _matchResults[i]);
+      newMultiBet.betsCount += 1;
+    }
+
+    BetToOwner[Bets.length - 1] = msg.sender;
+    OwnerToBets[msg.sender].push(Bets.length - 1);
+
+    return Bets.length - 1;
   }
 
-  function receiveMatchPrize(uint _matchId) public payable{
-    Bet storage userBet = Bets[_matchId][msg.sender];
-    Match memory selectedMatch = matchs[_matchId];
+  function receiveBetPrize(uint _BetsId) public payable {
+    require(BetToOwner[_BetsId] == msg.sender, "msg.sender");
+    require(Bets[_BetsId].received == false, "received != false");
+    
+    uint i = 0;
+    for (; i < Bets[_BetsId].betsCount; i++) {
+      require(matches[Bets[_BetsId].bets[i].matchId].finished == true, "finished != true");
+      require(matches[Bets[_BetsId].bets[i].matchId].result == Bets[_BetsId].bets[i].result, "result");
+    }
 
-    require(selectedMatch.finished == true);
-    require(selectedMatch.result == userBet.result);
-    require(userBet.received == false);
-
+    uint prize = Bets[_BetsId].value;
     uint16 rate = 0;
-    if (userBet.result == MatchResult.TEAM_A) rate = selectedMatch.rateA;
-    if (userBet.result == MatchResult.TEAM_B) rate = selectedMatch.rateB;
-    if (userBet.result == MatchResult.DRAW) rate = selectedMatch.rateDraw;
+    for (i = 0; i < Bets[_BetsId].betsCount; i++) {
+      if (matches[Bets[_BetsId].bets[i].matchId].result == MatchResult.TEAM_A) rate = matches[Bets[_BetsId].bets[i].matchId].rateA;
+      if (matches[Bets[_BetsId].bets[i].matchId].result == MatchResult.TEAM_B) rate = matches[Bets[_BetsId].bets[i].matchId].rateB;
+      if (matches[Bets[_BetsId].bets[i].matchId].result == MatchResult.DRAW) rate = matches[Bets[_BetsId].bets[i].matchId].rateDraw;
 
-    userBet.received = true;
-    payable(msg.sender).transfer(userBet.value*(rate/100));
+      prize = prize * rate / 100;     
+    }
+    
+    Bets[_BetsId].received = true;
+    Bets[_BetsId].prize = (prize * (100 - (contractFee + devFee)))/100;
+    payable(msg.sender).transfer(Bets[_BetsId].prize);
+    payable(owner()).transfer((prize * devFee)/100);
   }
-
 }
