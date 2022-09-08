@@ -120,4 +120,8 @@ contract Betting is Ownable {
     payable(msg.sender).transfer(Bets[_BetsId].prize);
     payable(owner()).transfer((prize * devFee)/100);
   }
+
+  function getUserBets(address _address) public view returns(uint[] memory) {
+    return OwnerToBets[_address];
+  }
 }
