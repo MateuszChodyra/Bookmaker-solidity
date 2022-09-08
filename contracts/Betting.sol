@@ -51,7 +51,7 @@ contract Betting is Ownable {
     uint16 _rateDraw, 
     uint64 _endBetTime) public onlyOwner returns(uint) 
   {
-    require(keccak256(bytes(_teamAName)) != keccak256(bytes(_teamBName)));
+    require(keccak256(bytes(_teamAName)) != keccak256(bytes(_teamBName)), "Team names not unique");
     require(_rateA > 100, "_rateA");
     require(_rateB > 100, "_rateB");
     require(_rateDraw > 100, "_rateDraw");
@@ -114,6 +114,8 @@ contract Betting is Ownable {
 
       prize = prize * rate / 100;     
     }
+
+    //@TODO Check if contract have enough balance for pay prize
     
     Bets[_BetsId].received = true;
     Bets[_BetsId].prize = (prize * (100 - (contractFee + devFee)))/100;
