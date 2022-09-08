@@ -30,7 +30,7 @@ contract Betting is Ownable {
   }
 
   struct MultiBet {
-    mapping (uint => Bet) bets;
+    mapping(uint => Bet) bets;
     uint value;
     bool received;
     uint betsCount;
@@ -40,8 +40,8 @@ contract Betting is Ownable {
   Match[] public matches;
 
   MultiBet[] public bets;
-  mapping (uint => address) public betToOwner;
-  mapping (address => uint[]) public ownerToBets;
+  mapping(uint => address) public betToOwner;
+  mapping(address => uint[]) public ownerToBets;
 
   function createMatch(
     string memory _teamAName, 
