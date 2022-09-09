@@ -10,6 +10,8 @@ contract Betting is Ownable {
 
   enum MatchResult{ PENDING, TEAM_A, TEAM_B, DRAW }
 
+  event MatchCreated(uint _id);
+
   uint contractFee = 4;
   uint devFee = 1;
 
@@ -58,6 +60,7 @@ contract Betting is Ownable {
     require(_endBetTime > block.timestamp, "_endBetTime");
 
     matches.push(Match(_teamAName, _teamBName, _rateA, _rateB, _rateDraw, _endBetTime, MatchResult.PENDING, false));
+    emit MatchCreated(matches.length - 1);
     return matches.length - 1;
   }
 
