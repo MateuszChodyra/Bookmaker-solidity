@@ -4,9 +4,9 @@ const Betting = artifacts.require("Betting");
 
 var expect = require('chai').expect;
 
-contract("Betting", (accounts) => {
+contract("Betting - part 1 - createMatch", (accounts) => {
 
-    let [owner, alice, bob] = accounts;
+    let [owner, alice] = accounts;
     let timestampNow = Math.floor(Date.now()/1000);
     
     let contractInstance;
@@ -18,7 +18,6 @@ contract("Betting", (accounts) => {
         const result = await contractInstance.createMatch("TEAM_A", "TEAM_B", 200, 200, 200, timestampNow+100, {from: owner});
         expect(result.receipt.status).to.equal(true);
 
-        const log = result.logs[0];
         assert.equal(result.logs[0].event, 'MatchCreated');
         assert.equal(result.logs[0].args._id.toString(), '0');
         
@@ -85,5 +84,4 @@ contract("Betting", (accounts) => {
         }
         assert.equal(err.reason, '_endBetTime');
     })
-
 })

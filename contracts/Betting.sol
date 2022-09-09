@@ -11,6 +11,7 @@ contract Betting is Ownable {
   enum MatchResult{ PENDING, TEAM_A, TEAM_B, DRAW }
 
   event MatchCreated(uint _id);
+  event BetCreated(uint _id);
 
   uint contractFee = 4;
   uint devFee = 1;
@@ -78,8 +79,8 @@ contract Betting is Ownable {
     
     uint i = 0;
     for (; i < _matchIds.length; i++) {
-      require(matches[_matchIds[i]].endBetTime > block.timestamp);
-      require(_matchResults[i] != MatchResult.PENDING);
+      require(matches[_matchIds[i]].endBetTime > block.timestamp, "endBetTime < block.timestamp");
+      require(_matchResults[i] != MatchResult.PENDING, "_matchResults == PENDING");
     }
 
     MultiBet storage newMultiBet = bets.push();
@@ -95,6 +96,7 @@ contract Betting is Ownable {
     betToOwner[bets.length - 1] = msg.sender;
     ownerToBets[msg.sender].push(bets.length - 1);
 
+    emit BetCreated(bets.length - 1);
     return bets.length - 1;
   }
 
