@@ -7,19 +7,15 @@ const time = require("./helpers/time");
 
 contract("Betting - part 2 - betMatches", (accounts) => {
 
-    let [owner, alice, bob] = accounts;
+    let [owner, alice] = accounts;
     let timestampNow = Math.floor(Date.now()/1000);
     
     let contractInstance;
-    let matchesIds = [];
     beforeEach(async () => {
         contractInstance = await Betting.new();
         
-        const result = await contractInstance.createMatch("TEAM_A", "TEAM_B", 200, 200, 200, timestampNow+1000, {from: owner});
-        matchesIds[0] = result.logs[0].args._id;
-
-        const result2 = await contractInstance.createMatch("TEAM_C", "TEAM_D", 200, 200, 200, timestampNow+1000, {from: owner});
-        matchesIds[1] = result2.logs[0].args._id;
+        await contractInstance.createMatch("TEAM_A", "TEAM_B", 200, 200, 200, timestampNow+5000, {from: owner});
+        await contractInstance.createMatch("TEAM_C", "TEAM_D", 200, 200, 200, timestampNow+5000, {from: owner});
     });
 
     it("Should be able to bet one match", async () => {
@@ -86,6 +82,17 @@ contract("Betting - part 2 - betMatches", (accounts) => {
             err = ex;
         }
         assert.equal(err.reason, '_matchResults == PENDING');
+    })
+
+    it("It should not be possible to bet to finished match", async () => {
+        await contractInstance.setMatchResult(0, 1, {from: owner});
+        let err;
+        try {
+            let result = await contractInstance.betMatches(['0'], ['1'], {from: alice, value: web3.utils.toWei('1', 'ether')});
+        } catch(ex) {
+            err = ex;
+        }
+        assert.equal(err.reason, 'finished != false');
     })
 
     it("It should not be possible to bet after _endBetTime", async () => {

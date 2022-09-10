@@ -12,6 +12,8 @@ contract Betting is Ownable {
 
   event MatchCreated(uint _id);
   event BetCreated(uint _id);
+  event MatchResultSettled(uint _id, uint _result);
+  event BetPrizeReceived(uint _id, uint _prize);
 
   uint contractFee = 4;
   uint devFee = 1;
@@ -65,12 +67,30 @@ contract Betting is Ownable {
     return matches.length - 1;
   }
 
+  //@TODO compare gas cost 
+  // function setMatchesResults(uint[] calldata _matchIds, MatchResult[] calldata _matchResults) public onlyOwner{
+  //   require(_matchIds.length == _matchResults.length, "_matchIds.length != _matchResults.length");
+    
+  //   uint i = 0;
+  //   for (; i < _matchIds.length; i++) {
+  //     require(_matchResults[i] != MatchResult.PENDING);
+  //     require(matches[_matchIds[i]].finished == false);
+  //   }
+
+  //   for (i = 0; i < _matchIds.length; i++) {
+  //     matches[_matchIds[i]].result = _matchResults[i];
+  //   matches[_matchIds[i]].finished = true;
+  //   }
+  // }
+
   function setMatchResult(uint _matchId, MatchResult _matchResult) public onlyOwner {
-    require(_matchResult != MatchResult.PENDING);
-    require(matches[_matchId].finished == false);
+    require(_matchResult != MatchResult.PENDING, "_matchResults == PENDING");
+    require(matches[_matchId].finished == false, "finished == true");
 
     matches[_matchId].result = _matchResult;
     matches[_matchId].finished = true;
+
+    emit MatchResultSettled(_matchId, uint256(_matchResult));
   }
 
   function betMatches(uint[] calldata _matchIds, MatchResult[] calldata _matchResults) public payable returns(uint) {
@@ -79,6 +99,7 @@ contract Betting is Ownable {
     
     uint i = 0;
     for (; i < _matchIds.length; i++) {
+      require(matches[_matchIds[i]].finished == false, "finished != false");
       require(matches[_matchIds[i]].endBetTime > block.timestamp, "endBetTime < block.timestamp");
       require(_matchResults[i] != MatchResult.PENDING, "_matchResults == PENDING");
     }
@@ -100,32 +121,33 @@ contract Betting is Ownable {
     return bets.length - 1;
   }
 
-  function receiveBetPrize(uint _BetsId) public payable {
-    require(betToOwner[_BetsId] == msg.sender, "msg.sender");
-    require(bets[_BetsId].received == false, "received != false");
+  function receiveBetPrize(uint _betId) public payable {
+    require(betToOwner[_betId] == msg.sender, "betToOwner[_betId] != msg.sender");
+    require(bets[_betId].received == false, "received != false");
     
     uint i = 0;
-    for (; i < bets[_BetsId].betsCount; i++) {
-      require(matches[bets[_BetsId].bets[i].matchId].finished == true, "finished != true");
-      require(matches[bets[_BetsId].bets[i].matchId].result == bets[_BetsId].bets[i].result, "result");
+    for (; i < bets[_betId].betsCount; i++) {
+      require(matches[bets[_betId].bets[i].matchId].finished == true, "finished != true");
+      require(matches[bets[_betId].bets[i].matchId].result == bets[_betId].bets[i].result, "result");
     }
 
-    uint prize = bets[_BetsId].value;
+    uint prize = bets[_betId].value;
     uint16 rate = 0;
-    for (i = 0; i < bets[_BetsId].betsCount; i++) {
-      if (matches[bets[_BetsId].bets[i].matchId].result == MatchResult.TEAM_A) rate = matches[bets[_BetsId].bets[i].matchId].rateA;
-      if (matches[bets[_BetsId].bets[i].matchId].result == MatchResult.TEAM_B) rate = matches[bets[_BetsId].bets[i].matchId].rateB;
-      if (matches[bets[_BetsId].bets[i].matchId].result == MatchResult.DRAW) rate = matches[bets[_BetsId].bets[i].matchId].rateDraw;
+    for (i = 0; i < bets[_betId].betsCount; i++) {
+      if (matches[bets[_betId].bets[i].matchId].result == MatchResult.TEAM_A) rate = matches[bets[_betId].bets[i].matchId].rateA;
+      if (matches[bets[_betId].bets[i].matchId].result == MatchResult.TEAM_B) rate = matches[bets[_betId].bets[i].matchId].rateB;
+      if (matches[bets[_betId].bets[i].matchId].result == MatchResult.DRAW) rate = matches[bets[_betId].bets[i].matchId].rateDraw;
 
       prize = prize * rate / 100;     
     }
 
     //@TODO Check if contract have enough balance for pay prize
     
-    bets[_BetsId].received = true;
-    bets[_BetsId].prize = (prize * (100 - (contractFee + devFee)))/100;
-    payable(msg.sender).transfer(bets[_BetsId].prize);
+    bets[_betId].received = true;
+    bets[_betId].prize = (prize * (100 - (contractFee + devFee)))/100;
+    payable(msg.sender).transfer(bets[_betId].prize);
     payable(owner()).transfer((prize * devFee)/100);
+    emit BetPrizeReceived(_betId, bets[_betId].prize);
   }
 
   function getUserBets(address _address) public view returns(uint[] memory) {
