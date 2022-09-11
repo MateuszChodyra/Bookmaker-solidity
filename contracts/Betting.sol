@@ -10,6 +10,7 @@ contract Betting is Ownable {
 
   enum MatchResult{ PENDING, TEAM_A, TEAM_B, DRAW }
 
+  event Received(address, uint);
   event MatchCreated(uint _id);
   event BetCreated(uint _id);
   event MatchResultSettled(uint _id, uint _result);
@@ -47,6 +48,10 @@ contract Betting is Ownable {
   MultiBet[] public bets;
   mapping(uint => address) public betToOwner;
   mapping(address => uint[]) public ownerToBets;
+
+  receive() external payable {
+    emit Received(msg.sender, msg.value);
+  }
 
   function createMatch(
     string memory _teamAName, 
