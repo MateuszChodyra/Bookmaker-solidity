@@ -127,6 +127,7 @@ contract Betting is Ownable {
   }
 
   function receiveBetPrize(uint _betId) public payable {
+    require(msg.value == 0, "msg.value != 0");
     require(betToOwner[_betId] == msg.sender, "betToOwner[_betId] != msg.sender");
     require(bets[_betId].received == false, "received != false");
     
@@ -157,5 +158,9 @@ contract Betting is Ownable {
 
   function getUserBets(address _address) public view returns(uint[] memory) {
     return ownerToBets[_address];
+  }
+
+  function getAllMatches() public view returns(Match[] memory) {
+    return matches;
   }
 }
