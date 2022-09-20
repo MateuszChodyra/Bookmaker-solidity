@@ -11,17 +11,25 @@ contract Betting is Ownable {
   enum MatchResult{ PENDING, TEAM_A, TEAM_B, DRAW }
 
   event Received(address, uint);
-  event MatchCreated(uint _id);
-  event BetCreated(uint _id);
-  event MatchResultSettled(uint _id, uint _result);
-  event BetPrizeReceived(uint _id, uint _prize);
+  event CategoryCreated(uint indexed _id, string _categoryName);
+  event MatchCreated(uint indexed _id);//TODO all input data
+  event BetCreated(uint indexed _id);
+  event MatchResultSettled(uint indexed _id, uint _result);
+  event BetPrizeReceived(uint indexed _id, uint _prize);
 
   uint contractFee = 4;
   uint devFee = 1;
 
+  struct Category {
+    uint256 id;
+    string name;
+  }
+
   struct Match {
+    uint256 id;
     string teamAName;
     string teamBName;
+    string categoryName;
     uint16 rateA;
     uint16 rateB;
     uint16 rateDraw;
@@ -43,6 +51,8 @@ contract Betting is Ownable {
     uint prize;
   }
 
+  Category[] public categories;
+
   Match[] public matches;
 
   MultiBet[] public bets;
@@ -53,13 +63,19 @@ contract Betting is Ownable {
     emit Received(msg.sender, msg.value);
   }
 
+  function createCategory(string memory _categoryName) public onlyOwner {
+    categories.push(Category(categories.length, _categoryName));
+    emit CategoryCreated(categories.length - 1, _categoryName);
+  }
+
   function createMatch(
     string memory _teamAName, 
     string memory _teamBName, 
     uint16 _rateA, 
     uint16 _rateB, 
     uint16 _rateDraw, 
-    uint64 _endBetTime) public onlyOwner returns(uint) 
+    uint64 _endBetTime,
+    uint256 _categoryId) public onlyOwner returns(uint) 
   {
     require(keccak256(bytes(_teamAName)) != keccak256(bytes(_teamBName)), "Team names not unique");
     require(_rateA > 100, "_rateA");
@@ -67,7 +83,7 @@ contract Betting is Ownable {
     require(_rateDraw > 100, "_rateDraw");
     require(_endBetTime > block.timestamp, "_endBetTime");
 
-    matches.push(Match(_teamAName, _teamBName, _rateA, _rateB, _rateDraw, _endBetTime, MatchResult.PENDING, false));
+    matches.push(Match(matches.length, _teamAName, _teamBName, categories[_categoryId].name, _rateA, _rateB, _rateDraw, _endBetTime, MatchResult.PENDING, false));
     emit MatchCreated(matches.length - 1);
     return matches.length - 1;
   }
@@ -162,5 +178,9 @@ contract Betting is Ownable {
 
   function getAllMatches() public view returns(Match[] memory) {
     return matches;
+  }
+
+  function getAllCategories() public view returns(Category[] memory) {
+    return categories;
   }
 }
