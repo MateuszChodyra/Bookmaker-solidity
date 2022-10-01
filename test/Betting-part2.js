@@ -13,9 +13,11 @@ contract("Betting - part 2 - betMatches", (accounts) => {
     let contractInstance;
     beforeEach(async () => {
         contractInstance = await Betting.new();
-        
-        await contractInstance.createMatch("TEAM_A", "TEAM_B", 200, 200, 200, timestampNow+5000, {from: owner});
-        await contractInstance.createMatch("TEAM_C", "TEAM_D", 200, 200, 200, timestampNow+5000, {from: owner});
+
+        await contractInstance.createCategory('Football', {from: owner});
+
+        await contractInstance.createMatch("TEAM_A", "TEAM_B", 200, 200, 200, timestampNow+5000, 0, {from: owner});
+        await contractInstance.createMatch("TEAM_C", "TEAM_D", 200, 200, 200, timestampNow+5000, 0, {from: owner});
     });
 
     it("Should be able to bet one match", async () => {

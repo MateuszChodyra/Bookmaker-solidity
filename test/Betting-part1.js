@@ -12,10 +12,11 @@ contract("Betting - part 1 - createMatch", (accounts) => {
     let contractInstance;
     beforeEach(async () => {
         contractInstance = await Betting.new();
+        await contractInstance.createCategory('Football', {from: owner});
     });
 
     it("Should be able to create a new match", async () => {
-        const result = await contractInstance.createMatch("TEAM_A", "TEAM_B", 200, 200, 200, timestampNow+100, {from: owner});
+        const result = await contractInstance.createMatch("TEAM_A", "TEAM_B", 200, 200, 200, timestampNow+100, 0, {from: owner});
         expect(result.receipt.status).to.equal(true);
 
         assert.equal(result.logs[0].event, 'MatchCreated');
@@ -28,7 +29,7 @@ contract("Betting - part 1 - createMatch", (accounts) => {
     it("It should not be possible for anyone other than the owner to create a new match", async () => {
         let err;
         try {
-            const result = await contractInstance.createMatch("TEAM_A", "TEAM_B", 200, 200, 200, timestampNow+100, {from: alice});
+            const result = await contractInstance.createMatch("TEAM_A", "TEAM_B", 200, 200, 200, timestampNow+100, 0, {from: alice});
         } catch(ex) {
             err = ex;
         }
@@ -38,7 +39,7 @@ contract("Betting - part 1 - createMatch", (accounts) => {
     it("It should not be possible to create a new match with the same team names", async () => {
         let err;
         try {
-            const result = await contractInstance.createMatch("TEAM_A", "TEAM_A", 200, 200, 200, timestampNow+100, {from: owner});
+            const result = await contractInstance.createMatch("TEAM_A", "TEAM_A", 200, 200, 200, timestampNow+100, 0, {from: owner});
         } catch(ex) {
             err = ex;
         }
@@ -48,7 +49,7 @@ contract("Betting - part 1 - createMatch", (accounts) => {
     it("It should not be possible to create a new match with rateA under 101", async () => {
         let err;
         try {
-            const result = await contractInstance.createMatch("TEAM_A", "TEAM_B", 100, 200, 200, timestampNow+100, {from: owner});
+            const result = await contractInstance.createMatch("TEAM_A", "TEAM_B", 100, 200, 200, timestampNow+100, 0, {from: owner});
         } catch(ex) {
             err = ex;
         }
@@ -58,7 +59,7 @@ contract("Betting - part 1 - createMatch", (accounts) => {
     it("It should not be possible to create a new match with rateB under 101", async () => {
         let err;
         try {
-            const result = await contractInstance.createMatch("TEAM_A", "TEAM_B", 200, 100, 200, timestampNow+100, {from: owner});
+            const result = await contractInstance.createMatch("TEAM_A", "TEAM_B", 200, 100, 200, timestampNow+100, 0, {from: owner});
         } catch(ex) {
             err = ex;
         }
@@ -68,7 +69,7 @@ contract("Betting - part 1 - createMatch", (accounts) => {
     it("It should not be possible to create a new match with rateDraw under 101", async () => {
         let err;
         try {
-            const result = await contractInstance.createMatch("TEAM_A", "TEAM_B", 200, 200, 100, timestampNow+100, {from: owner});
+            const result = await contractInstance.createMatch("TEAM_A", "TEAM_B", 200, 200, 100, timestampNow+100, 0, {from: owner});
         } catch(ex) {
             err = ex;
         }
@@ -78,7 +79,7 @@ contract("Betting - part 1 - createMatch", (accounts) => {
     it("It should not be possible to create a new match with endBetTime from the past", async () => {
         let err;
         try {
-            const result = await contractInstance.createMatch("TEAM_A", "TEAM_B", 200, 200, 200, timestampNow-1000, {from: owner});
+            const result = await contractInstance.createMatch("TEAM_A", "TEAM_B", 200, 200, 200, timestampNow-1000, 0, {from: owner});
         } catch(ex) {
             err = ex;
         }

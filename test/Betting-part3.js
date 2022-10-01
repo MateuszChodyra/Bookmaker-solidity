@@ -13,8 +13,10 @@ contract("Betting - part 3 - setMatchResult", (accounts) => {
     beforeEach(async () => {
         contractInstance = await Betting.new();
         
-        await contractInstance.createMatch("TEAM_A", "TEAM_B", 200, 200, 200, timestampNow+1000, {from: owner});
-        await contractInstance.createMatch("TEAM_C", "TEAM_D", 200, 200, 200, timestampNow+1000, {from: owner});
+        await contractInstance.createCategory('Football', {from: owner});
+
+        await contractInstance.createMatch("TEAM_A", "TEAM_B", 200, 200, 200, timestampNow+1000, 0, {from: owner});
+        await contractInstance.createMatch("TEAM_C", "TEAM_D", 200, 200, 200, timestampNow+1000, 0, {from: owner});
     });
 
     it("Should be able to set result to unfinished match", async () => {

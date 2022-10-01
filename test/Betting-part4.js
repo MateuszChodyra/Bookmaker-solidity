@@ -13,9 +13,11 @@ contract("Betting - part 4 - receiveBetPrize", (accounts) => {
     beforeEach(async () => {
         contractInstance = await Betting.new();
         
-        await contractInstance.createMatch("TEAM_A", "TEAM_B", 200, 200, 200, timestampNow+1000, {from: owner});
-        await contractInstance.createMatch("TEAM_C", "TEAM_D", 200, 200, 200, timestampNow+1000, {from: owner});
-        await contractInstance.createMatch("TEAM_E", "TEAM_F", 200, 200, 200, timestampNow+1000, {from: owner});
+        await contractInstance.createCategory('Football', {from: owner});
+
+        await contractInstance.createMatch("TEAM_A", "TEAM_B", 200, 200, 200, timestampNow+1000, 0, {from: owner});
+        await contractInstance.createMatch("TEAM_C", "TEAM_D", 200, 200, 200, timestampNow+1000, 0, {from: owner});
+        await contractInstance.createMatch("TEAM_E", "TEAM_F", 200, 200, 200, timestampNow+1000, 0, {from: owner});
 
         await contractInstance.betMatches(['0'], ['1'], {from: alice, value: web3.utils.toWei('1', 'ether')});
         await contractInstance.betMatches(['0', '1'], ['1', '1'], {from: bob, value: web3.utils.toWei('1', 'ether')});
